@@ -20,7 +20,7 @@ object Comment {
     val cols = line.split("\\|", -1)
 
     if (cols.length != 7) {
-      throw new IllegalArgumentException(s"Falsche Spaltenanzahl. Erwartet: 5, Gefunden: ${cols.length}")
+      throw new IllegalArgumentException(s"Falsche Spaltenanzahl. Erwartet: 7, Gefunden: ${cols.length}")
     }
     val timestamp = Timestamp.from(OffsetDateTime.parse(cols(0)).toInstant)
     val commentId = cols(1).toLong

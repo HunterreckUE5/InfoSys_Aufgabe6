@@ -14,51 +14,28 @@ class SparkHandler {
 
   import session.implicits._
 
-  def importData(): (Dataset[Comment], Dataset[Post], Dataset[User]) = {
+  def importData(pathToPosts : String, pathToComments: String): (Dataset[Comment], Dataset[Post]) = {
     println("Starte Import...")
 
-    val comments = importCommentsAndUsers("comments.dat")
+    val comments = importComments(pathToComments)
     println(s"Comments geladen: ${comments.count()}")
 
-    val posts = importPostsAndUsers("posts.dat")
+    val posts = importPosts(pathToPosts)
     println(s"Posts geladen: ${posts.count()}")
 
-    val user = importUsers("posts.dat", "comments.dat")
-    println(s"Users geladen (Total): ${user.count()}")
-
-    (comments, posts, user)
+    (comments, posts)
   }
 
-  private def importPostsAndUsers(filePath: String): Dataset[Post] = {
+  private def importPosts(filePath: String): Dataset[Post] = {
     session.read.textFile(filePath).flatMap { line =>
       Some(Post(line))
     }
   }
 
-  private def importCommentsAndUsers(filePath: String): Dataset[Comment] = {
+  private def importComments(filePath: String): Dataset[Comment] = {
     session.read.textFile(filePath).flatMap { line =>
       Some(Comment(line))
     }
-  }
-
-  private def importUsers(pathPosts: String, pathComments: String): Dataset[User] = {
-
-
-    val usersFromPosts = session.read.textFile(pathPosts).flatMap { line =>
-        Some(User(line))
-    }
-
-    val usersFromComments = session.read.textFile(pathComments).flatMap { line =>
-      try {
-        Some(User(line))
-      } catch {
-        case _: Exception => None
-      }
-    }
-
-    usersFromPosts
-      .union(usersFromComments)
-      .dropDuplicates("id")
   }
 
   def close(): Unit = {

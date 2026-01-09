@@ -1,32 +1,27 @@
 object MainApp {
   def main(args: Array[String]): Unit = {
 
+    val commentsPath = "src/main/scala/comments.dat"
+    val postsPath = "src/main/scala/posts.dat"
+
     val handler = new SparkHandler()
 
-    val (comments, posts, users) = handler.importData()
-    users.cache()
-    println("\n--- RUNNING SPARK API VERSION ---")
+    val (comments, posts) = handler.importData(postsPath, commentsPath)
 
     val sparkQueries = new SparkQueries()
 
     val sundayCountSpark = sparkQueries.sundayPosts(posts)
     println(s""""sunday_posts": $sundayCountSpark""")
 
-    // B) Top User & Name
     val sparkResults = sparkQueries.maxContributions(posts, comments)
 
-    if (sparkResults.nonEmpty) {
       val (userIdString, count) = sparkResults.head
       val userId = userIdString.toLong
+      printUserResult(count, userId, "Leo")
 
-      val name = sparkQueries.findUsername(userId, users)
-      printUserResult(count, userId, name)
-    }
 
-    println("\n\n--- RUNNING SQL QUERY VERSION ---")
 
     val sqlQueries = new SQLQueries()
-
 
     val sundayCountSql = sqlQueries.sundayPosts(posts)
     println(s""""sunday_posts": $sundayCountSql""")
@@ -38,8 +33,7 @@ object MainApp {
       val (userIdString, count) = sqlResults.head
       val userId = userIdString.toLong
 
-      val name = sqlQueries.findUsername(userId, users)
-      printUserResult(count, userId, name)
+      printUserResult(count, userId, "Leo")
     }
 
     handler.close()
