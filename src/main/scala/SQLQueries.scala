@@ -1,12 +1,6 @@
 import org.apache.spark.sql.{Dataset, SparkSession}
 
-class SQLQueries extends Queries {
-
-  val session: SparkSession = SparkSession
-    .builder()
-    .appName("SQLQueries")
-    .master("local[*]")
-    .getOrCreate()
+class SQLQueries (val session: SparkSession) extends Queries {
 
   import session.implicits._
 
@@ -39,24 +33,50 @@ class SQLQueries extends Queries {
 
     val resultDF = session.sql(query)
 
-    resultDF.show() // Zur Kontrolle auf der Konsole
-
     resultDF.as[(Long, Long)]
       .collect()
       .map { case (id, count) => (id.toString, count.toInt) }
       .toList
   }
 
-  def findUsername(userId: Long, users: Dataset[User]): String = {
-    users.createOrReplaceTempView("users")
 
-    // Wir nutzen String Interpolation (s"..."), um die ID direkt in das SQL einzufügen
-    val query = s"SELECT name FROM users WHERE Id = $userId"
+  def findUserName(posts: Dataset[Post], comments: Dataset[Comment], userId: Long): Option[String] = {
+
+    posts.createOrReplaceTempView("posts")
+    comments.createOrReplaceTempView("comments")
+
+    val query =
+      s"""
+        SELECT userName
+        FROM
+          (
+            SELECT userName FROM posts WHERE userId = '$userId'
+            UNION
+            SELECT userName FROM comments WHERE userId = '$userId'
+          ) as combined
+        WHERE userName IS NOT NULL
+        LIMIT 1
+      """
 
     val resultDF = session.sql(query)
 
-    // Wir erwarten einen String zurück (den Namen)
-    // headOption verhindert einen Absturz, falls die ID nicht gefunden wird
-    resultDF.as[String].collect().headOption.getOrElse("Unbekannt")
+    resultDF
+      .as[String]
+      .collect()
+      .headOption
   }
 }
+
+
+  object SQLQueries {
+
+    def apply(master: String = "local[*]", appName: String = "SQLQueries") = {
+      val session = SparkSession
+        .builder()
+        .appName(appName)
+        .master(master)
+        .getOrCreate()
+
+      new SQLQueries(session)
+    }
+  }

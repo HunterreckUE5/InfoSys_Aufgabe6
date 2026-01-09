@@ -1,19 +1,13 @@
 import org.apache.spark.sql.{Dataset, SparkSession, functions}
 import org.apache.spark.sql.functions._
 
-class SparkQueries extends Queries {
-  val session: SparkSession = SparkSession
-    .builder()
-    .appName("SQLQueries")
-    .master("local[*]")
-    .getOrCreate()
+class SparkQueries(val session: SparkSession) extends Queries {
 
   import session.implicits._
 
   override def sundayPosts(posts: Dataset[Post]): Long = {
 
     posts.createOrReplaceTempView("posts")
-
     return posts.where("dayofweek(ts) = 1")
       .count()
 
@@ -36,14 +30,39 @@ class SparkQueries extends Queries {
       .toList
   }
 
-  /*
-  def findUsername(userId: Long, users: Dataset[User]): String = {
-    users
-      .where($"id" === userId)  // Filter: Entspricht WHERE id = ...
-      .select($"name")          // Projection: Entspricht SELECT name
-      .as[String]               // Encoding: Dataset[Row] -> Dataset[String]
-      .collect()                // Action: Daten zum Driver holen
-      .headOption               // Safe access: Erstes Element holen (Option)
-      .getOrElse("Unbekannt")   // Fallback, falls ID nicht existiert
-  }*/
+  def findUserName(posts: Dataset[Post], comments: Dataset[Comment], userId: Long): Option[String] = {
+
+    val distinctNamesPosts = posts
+      .filter(col("userId") === userId)
+      .select(col("userName"))
+      .where(col("userName").isNotNull)
+
+
+    val distinctNamesComments = comments
+      .filter(col("userId") === userId)
+      .select(col("userName"))
+      .where(col("userName").isNotNull)
+
+    distinctNamesPosts
+      .union(distinctNamesComments)
+      .limit(1)
+      .as[String]
+      .collect()
+      .headOption
+  }
+
+}
+
+object SparkQueries {
+
+  def apply(master: String = "local[*]", appName: String = "SQLQueries"): SparkQueries = {
+
+    val session = SparkSession
+      .builder()
+      .appName(appName)
+      .master(master)
+      .getOrCreate()
+
+    new SparkQueries(session)
+  }
 }

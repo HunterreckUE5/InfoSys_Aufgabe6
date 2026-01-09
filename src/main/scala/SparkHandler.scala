@@ -1,16 +1,10 @@
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.log4j.{Level, Logger}
 
-class SparkHandler {
+class SparkHandler(val session : SparkSession) {
 
   Logger.getLogger("org").setLevel(Level.ERROR)
   Logger.getLogger("akka").setLevel(Level.ERROR)
-
-  val session: SparkSession = SparkSession
-    .builder
-    .appName("InfoSys")
-    .master("local[*]")
-    .getOrCreate()
 
   import session.implicits._
 
@@ -40,5 +34,21 @@ class SparkHandler {
 
   def close(): Unit = {
     session.stop()
+  }
+}
+object SparkHandler {
+
+  def apply(appName: String = "InfoSys", master: String = "local[*]"): SparkHandler = {
+
+    Logger.getLogger("org").setLevel(Level.ERROR)
+    Logger.getLogger("akka").setLevel(Level.ERROR)
+
+    val session = SparkSession
+      .builder
+      .appName(appName)
+      .master(master)
+      .getOrCreate()
+
+    new SparkHandler(session)
   }
 }
