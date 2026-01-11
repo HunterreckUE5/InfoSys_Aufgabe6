@@ -7,11 +7,13 @@ object MainApp {
     val handler =  SparkHandler()
 
     val (comments, posts) = handler.importData(postsPath, commentsPath)
-
+    println("------------------------")
     val sparkQueries =  SparkQueries()
 
     val sundayCountSpark = sparkQueries.sundayPosts(posts)
     println(s""""sunday_posts": $sundayCountSpark""")
+
+    println("")
 
     val sparkResults = sparkQueries.maxContributions(posts, comments)
       val (userIdString, count) = sparkResults.head
@@ -19,12 +21,14 @@ object MainApp {
       val userName = sparkQueries.findUserName(posts, comments, userId).head
       printUserResult(count, userId, userName)
 
-
+    println("------------------------")
 
     val sqlQueries =  SQLQueries()
 
     val sundayCountSql = sqlQueries.sundayPosts(posts)
     println(s""""sunday_posts": $sundayCountSql""")
+
+    println("")
 
     val sqlResults = sqlQueries.maxContributions(posts, comments)
     if (sqlResults.nonEmpty) {

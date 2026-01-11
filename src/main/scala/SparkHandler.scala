@@ -47,6 +47,7 @@ object SparkHandler {
       .builder
       .appName(appName)
       .master(master)
+      .config("spark.sql.session.timeZone", "UTC")
       .getOrCreate()
 
     new SparkHandler(session)
